@@ -1,31 +1,7 @@
 library(dplyr)
 library(ggplot2)
 library(data.table)
-
-to_POSIXct_date <- function(x) {
-  return (as.POSIXct(x, format="%m/%d/%Y %H:%M:%S"))
-}
-
-trips = data.table::fread(file="./data/hubway_trips.csv")
-stations = data.table::fread(file="./data/hubway_stations.csv")
-
-colnames(trips) = c('record.id','trip.id','status','trip.duration','start.date','start.station','end.date','end.station','bike.id','sub.type','zip.code','birthdate','gender')
-
-proc.trips = trips %>%
-  select(-status) %>% 
-  mutate(start.date = to_date(start.date),
-         end.date = to_date(end.date),
-         trip.duration = chron::minutes(end.date - start.date),
-         zip.code = as.factor(gsub(pattern="'",replacement="",x=zip.code)),
-         gender = as.factor(gender),
-         sub.type = as.factor(sub.type),
-         start.station = as.factor(start.station),
-         end.station = as.factor(end.station)
-         ) %>% 
-  filter(trip.duration > 1)
-
-
-sapply(proc.trips, class)
+library(re)
 
 
 to_date <- function(x) {
@@ -36,5 +12,32 @@ to_date <- function(x) {
   return(time)
 }
 
+to_pdate <- function(x) {
+  return (as.POSIXct(x, format = "%m/%d/%Y %H:%M:%S"))
+}
+
+trips = data.table::fread(file="./data/hubway_trips.csv")
+stations = data.table::fread(file="./data/hubway_stations.csv")
+
+colnames(trips) = c('Record.ID','Trip.ID','Status','Trip.Duration','Start.Date',
+                    'Start.Station','End.Date','End.Station','Bike.ID','Sub.Type',
+                    'Zipcode','Birthdate','Gender')
+
+proc.trips = trips %>%
+  select(-Status) %>% 
+  filter(str_extract(Start.Date,pattern='\\d\\d\\d\\d')==2012) %>% 
+  mutate(Trip.Duration = chron::minutes(to_date(End.Date) - to_date(Start.Date))) %>%  
+  filter(Trip.Duration > 1)
+    
+ 
+
+
+saveRDS(proc.trips, file = "data/tripdata.rda")
+bar <- readRDS(file="data/tripdata.rda")
+
+str_extract(trips$Start.Date[],pattern='\\d\\d\\d\\d')==2012
+
 
 data.table::fwrite(x = proc.trips,file="data/cleaned_trips.csv")
+
+rm(list=ls())
