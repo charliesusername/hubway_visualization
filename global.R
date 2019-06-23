@@ -3,6 +3,7 @@ library(shinydashboard)
 library(leaflet)
 library(dplyr)
 library(ggplot2)
+library(reshape2)
 
 ## Helper Functions
 to_pdate <- function(x) {
@@ -10,32 +11,61 @@ to_pdate <- function(x) {
 }
 
 # Joins a dataframe Grouped By Hours to an empty set to fill out the empty Hours.
-left_join_na <- function(x) {
-  empty <- data.frame(Hours = seq(0,23))
-  result = left_join(empty, x, by="Hours")
+left_join_na <- function(x,unit,wknd) {
+  if(unit=="Hours") {
+    empty <- data.frame(Hours = seq(0,23))
+  } else if (unit =="Weekdays") {
+    if (wknd==2) {
+      empty <- data.frame(Weekdays = seq(0, 6))
+    } else if (wknd==1) {
+      empty <- data.frame(Weekdays = c(0,6))
+    } else if (wknd==0) {
+      empty <- data.frame(Weekdays = seq(1,5))
+    }
+  } else if (unit == "Months") {
+    empty <- data.frame(Months = seq(1,12))
+  }
+  result = left_join(empty, x, by=unit)
   result[,2] <- ifelse(is.na(result[,2]),0,result[,2])
   return(result)
 }
 
-# Sums the number of bikes moved each hour by station
-sum_bikes_per_hour <- function(stn){
-  dep_df <- trip.data %>% filter(Start.Station == stn) %>%
-    select(Start.Date, Record.ID) %>%
-    mutate(Start.Date = to_pdate(Start.Date),
-           Hours = as.numeric(strftime(Start.Date, format = "%H"))) %>%
-    filter(!(weekdays(Start.Date) %in% c('Saturday', 'Sunday'))) %>% 
-    group_by(Hours) %>% summarise(Dep = n()) %>% left_join_na(.)
+# Averaged the number of bikes moved in/out by a given station over a given time unit.
+# With a Weekend On/Off/Only toggle.
+sum_bikes_per_hour <- function(df, stn, unit="Hours", wknd=0){
+  dep_df <- df %>% filter(Start.Station == stn) %>%
+    select(Start.Date, Record.ID) %>% mutate(Start.Date = to_pdate(Start.Date))
   
-  arr_df <- trip.data %>% filter(End.Station == stn) %>%
-    select(End.Date, Record.ID) %>%
-    mutate(End.Date = to_pdate(End.Date),
-           Hours = as.numeric(strftime(End.Date, format = "%H"))) %>%
-    filter(!(weekdays(End.Date) %in% c('Saturday', 'Sunday'))) %>% 
-    group_by(Hours) %>% summarise(Arr = n()) %>% 
-    left_join_na()
+  arr_df <- df %>% filter(End.Station == stn) %>%
+    select(End.Date, Record.ID) %>% mutate(End.Date = to_pdate(End.Date))
+    
+  if (unit == "Hours") {
+    dep_df <- dep_df %>% mutate(Hours = as.numeric(strftime(Start.Date, format = "%H"))) %>% group_by(Hours)
+    arr_df <- arr_df %>% mutate(Hours = as.numeric(strftime(End.Date, format = "%H"))) %>% group_by(Hours)
+  } else if (unit == "Months") {
+    dep_df <- dep_df %>% mutate(Months = as.numeric(strftime(Start.Date, format = "%m"))) %>% group_by(Months)
+    arr_df <- arr_df %>% mutate(Months = as.numeric(strftime(End.Date, format = "%m"))) %>% group_by(Months)
+  } else if (unit == "Weekdays") {
+    dep_df <- dep_df %>% mutate(Weekdays = as.numeric(strftime(Start.Date, format = "%w"))) %>% group_by(Weekdays)
+    arr_df <- arr_df %>% mutate(Weekdays = as.numeric(strftime(End.Date, format = "%w"))) %>% group_by(Weekdays)
+  }
   
-  out_df <- left_join(dep_df, arr_df, by="Hours")
-  return(out_df)
+  if (wknd == 1) {
+    dep_df <- dep_df %>%  filter(weekdays(Start.Date) %in% c('Saturday', 'Sunday'))
+    arr_df <- arr_df %>%  filter(weekdays(End.Date) %in% c('Saturday', 'Sunday'))
+  } else if (wknd == 0) {
+    dep_df <- dep_df %>%  filter(!(weekdays(Start.Date) %in% c('Saturday', 'Sunday')))
+    arr_df <- arr_df %>%  filter(!(weekdays(End.Date) %in% c('Saturday', 'Sunday')))
+  }
+
+
+  dep_df <- dep_df %>% summarise(Dep = n()) %>% left_join_na(., unit, wknd)
+  arr_df <- arr_df %>% summarise(Arr = n()) %>% left_join_na(., unit, wknd)
+  
+  
+  out_df <- left_join(dep_df, arr_df,by=unit)
+  return (out_df)
+   
 }
 
 
@@ -57,6 +87,7 @@ Station.Icons <- iconList(
 
 ## Default Value
 neighborhood = 'Boston'
+
 
 
 

@@ -1,6 +1,9 @@
 shinyServer(function(input, output, session) {
     map = createLeafletMap(session, 'map_of_boston')
     
+    variables = reactiveValues()
+    
+    
     ##################################################################
                              ##Render Map##
     ##################################################################
@@ -22,39 +25,75 @@ shinyServer(function(input, output, session) {
     ##################################################################
     
     mapdata <- eventReactive(input$map_of_boston_marker_click,{
-        
         click <- input$map_of_boston_marker_click
+         
         if(is.null(click)) {
             station_select = 3
         } else {
             station_select = station.data$id[station.data$lat==click$lat & station.data$lng==click$lng]
         }
-    
+        
         
         output$station_select <- renderText({
             station.data$station[station.data$id==station_select]
         })
         
-        return(sum_bikes_per_hour(station_select))
+        
+        
+        
+        return(station_select)
         
     },ignoreNULL = FALSE)
     
-    output$station_select <- renderText({
-        paste("You chose", input$station_dropdown)
-    })
     
     output$station_density <- renderPlot({
-        ggplot(data = mapdata()) +
-            geom_line(aes(x = Hours, y = Arr, color = 'blue')) +
-            geom_line(aes(x = Hours, y = Dep, color = 'red')) +
-            theme(legend.position = "bottom")
+        
+        df <- sum_bikes_per_hour(trip.data, mapdata())
+        df$Net_Trips <- df$Arr - df$Dep
+        
+        ggplot(data = df,aes(x=Hours,y=Net_Trips)) +
+            geom_bar(stat='identity',aes(fill=Net_Trips > 0)) +
+            theme(legend.position = "None")
     })
     
     
-    output$plot1 <- renderPlot({
-        data <- trip.data$Trip.Duration[seq_len(input$slider)]
+    output$gender_chart <- renderPlot({
+        data <- mapdata()
+        
+        
+        
+        df_plot <- sum_bikes_per_hour(trip.data %>% filter(Gender=="Male"),mapdata()) %>%  
+            transmute(Hours=Hours, Male = Dep + Arr)
+        df_plot$Female <- sum_bikes_per_hour(trip.data %>% filter(Gender=="Female"),mapdata()) %>%  
+            transmute(Hours=Hours,Female = Dep + Arr) %>% .[,2]
+        
+        df_plot <- data.frame(Male = sum(df_plot$Male),Female = sum(df_plot$Female))
+        
+    
+        ggplot(data=melt(df_plot), aes(x="",y=value, fill=variable)) + 
+            geom_bar(stat='identity',width=1) +
+            coord_polar("y", start=0) +
+            ggtitle("Gender Use")
         
     })
+    
+    output$sub_type_chart <- renderPlot({
+        
+        df_plot <- sum_bikes_per_hour(trip.data %>% filter(Sub.Type=="Registered"),mapdata()) %>%  
+            transmute(Hours=Hours,Commuter = Dep + Arr)
+        
+        df_plot$Casual <- sum_bikes_per_hour(trip.data %>% filter(Sub.Type=="Casual"),mapdata()) %>%  
+            transmute(Hours=Hours,Casual = Dep + Arr) %>% .[,2]
+        
+        ggplot(data=melt(df_plot,id.vars="Hours"), aes(x=Hours,y=value, fill=variable)) + 
+            geom_bar(stat='identity', position='identity', aes(alpha=0.3)) +
+            ggtitle("Average Trips By Consumer Type \nCommuter v. Casual")
+        
+    })
+    
+    
+    
+    
     
     
     
