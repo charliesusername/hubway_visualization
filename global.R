@@ -60,10 +60,8 @@ sum_bikes_per_hour <- function(df, stn, unit="Hours", wknd=0){
     arr_df <- arr_df %>%  filter(!(weekdays(End.Date) %in% c('Saturday', 'Sunday')))
   }
 
-
   dep_df <- dep_df %>% summarise(Dep = n()) %>% left_join_na(., unit, wknd)
   arr_df <- arr_df %>% summarise(Arr = n()) %>% left_join_na(., unit, wknd)
-  
   
   out_df <- left_join(dep_df, arr_df,by=unit)
   return (out_df)
@@ -91,15 +89,12 @@ Station.Icons <- iconList(
 ## Default Value
 neighborhood = 'Boston'
 
-
-
-
 ## Marker Stuff
 
 stn_loc_lookup = station.data %>% select(id,lat,lng)
 
 stationIcon <- makeIcon(
-  iconUrl = "www/HubwayLogo_green.png",
+  iconUrl = "www/HubwayLogo_Green.png",
   iconWidth = 20, iconHeight = 20,
   iconAnchorX = 0, iconAnchorY = 0
 )

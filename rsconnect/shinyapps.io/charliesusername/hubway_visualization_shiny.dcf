@@ -1,0 +1,10 @@
+name: hubway_visualization_shiny
+title:
+username:
+account: charliesusername
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 995456
+bundleId: 2174257
+url: https://charliesusername.shinyapps.io/hubway_visualization_shiny/
+when: 1561384745.22188

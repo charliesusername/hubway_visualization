@@ -56,11 +56,6 @@ shinyServer(function(input, output, session) {
         orig_stn
     })
     
-    
-    
-    
-    
-    
     session$onFlush(once = T, function() {
         
         
@@ -93,19 +88,6 @@ shinyServer(function(input, output, session) {
                     lat = ~lat,
                     weight=3,
                     opacity=0.4,color = 'blue')
-                
-            
-            
-            # for(group in levels(df$group)) {
-            #     myMap = addPolylines(myMap,
-            #                          lng = ~ longitude,lat = ~ latitude,
-            #                          data = df[df$group == group, ],color = ~ colour,weight = 3)
-            # }
-                
-                
-                
-                
-                    
                 
                 myMap
         })

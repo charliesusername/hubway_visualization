@@ -8,8 +8,6 @@ shinyUI(dashboardPage(
         )
     ),
     
-    
-    
     dashboardBody(tabItems(
         #Map Tab
         tabItem(
@@ -68,9 +66,3 @@ shinyUI(dashboardPage(
                 fluidRow(column(width=12,DT::dataTableOutput("trips_table"))))
     )))
 )
-
-
-
-style = "font-family: 'Lobster', cursive;
-        font-weight: 500; line-height: 1.1; 
-        color: #4d3a7d;"
