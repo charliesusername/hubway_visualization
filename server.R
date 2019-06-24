@@ -50,7 +50,7 @@ shinyServer(function(input, output, session) {
     })
     
     orig_stn <- reactive({
-        print(mapdata())
+    
         orig_stn <-data.frame(lat = station.data$lat[station.data$id == mapdata()],
                               lng = station.data$lng[station.data$id == mapdata()])
         orig_stn
