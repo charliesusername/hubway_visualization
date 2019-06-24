@@ -4,6 +4,8 @@ library(leaflet)
 library(dplyr)
 library(ggplot2)
 library(reshape2)
+library(ggthemes)
+
 
 ## Helper Functions
 to_pdate <- function(x) {
@@ -68,6 +70,7 @@ sum_bikes_per_hour <- function(df, stn, unit="Hours", wknd=0){
    
 }
 
+#setwd("C:/Users/iamch/Desktop/data_science/projects/hubway_visualization_shiny/")
 
 ## Pull Trip Data
 trip.data <- data.table::fread(input="data/cleaned_trips.csv")
@@ -92,6 +95,8 @@ neighborhood = 'Boston'
 
 
 ## Marker Stuff
+
+stn_loc_lookup = station.data %>% select(id,lat,lng)
 
 stationIcon <- makeIcon(
   iconUrl = "www/HubwayLogo_green.png",
